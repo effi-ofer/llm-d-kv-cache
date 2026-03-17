@@ -105,7 +105,13 @@ class SharedStorageOffloadingSpec(OffloadingSpec):
     def get_manager(self) -> OffloadingManager:
         assert self.vllm_config.parallel_config.rank == 0, "Scheduler rank should be 0"
         if not self._manager:
-            self._manager = SharedStorageOffloadingManager(file_mapper=self.file_mapper)
+            self._manager = SharedStorageOffloadingManager(
+                file_mapper=self.file_mapper,
+                bucket=self.extra_config.get("bucket", ""),
+                endpoint_url=self.extra_config.get("endpoint_url", ""),
+                access_key=self.extra_config.get("access_key", ""),
+                secret_key=self.extra_config.get("secret_key", ""),
+            )
         return self._manager
 
     def get_handlers(
@@ -123,6 +129,11 @@ class SharedStorageOffloadingSpec(OffloadingSpec):
                 threads_per_gpu=self.threads_per_gpu,
                 max_staging_memory_gb=self.max_staging_memory_gb,
                 gds_mode=self.gds_mode,
+                bucket=self.extra_config.get("bucket", ""),
+                endpoint_override=self.extra_config.get("endpoint_url", ""),
+                scheme=self.extra_config.get("scheme", "http"),
+                access_key=self.extra_config.get("access_key", ""),
+                secret_key=self.extra_config.get("secret_key", ""),
             )
 
         assert self._handlers is not None
