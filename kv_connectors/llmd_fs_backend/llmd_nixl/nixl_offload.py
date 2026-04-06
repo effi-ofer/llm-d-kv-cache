@@ -208,13 +208,13 @@ class StorageOffloadEngine(ABC):
 
     def async_store_gpu_blocks(self, job_id: int, files: List[str], block_ids: List) -> bool:
         """ Store gpu kv cache blocks into storage (obj, posix, gds, whatever) """
-        self.logger.info("async_store_gpu_blocks in_flight=%d", len(self._transfers))
+        self.logger.debug("async_store_gpu_blocks in_flight=%d", len(self._transfers))
         tensors, stagings = self._prepare_store(block_ids)
         return self._submit_transfer(job_id, tensors, stagings, files, block_ids, "WRITE")
 
     def async_load_gpu_blocks(self, job_id: int, files: List[str], block_ids: List) -> bool:
         """ Load kv cache blocks from storage into gpu """
-        self.logger.info("async_load_gpu_blocks in_flight=%d", len(self._transfers))
+        self.logger.debug("async_load_gpu_blocks in_flight=%d", len(self._transfers))
         tensors, stagings = self._prepare_load(block_ids)
         return self._submit_transfer(job_id, tensors, stagings, files, block_ids, "READ")
 
@@ -238,7 +238,7 @@ class StorageOffloadEngine(ABC):
                 state = "ERR"
 
             if state == "DONE":
-                self.logger.info("DONE job_id=%d", entry.job_id)
+                self.logger.debug("DONE job_id=%d", entry.job_id)
                 self._complete_transfer(entry)
                 results.append((entry.job_id, True))
                 to_remove.append(entry)
@@ -268,7 +268,7 @@ class StorageOffloadEngine(ABC):
             elif state == "PROC":
                 i += 1
                 if i % 10 == 0:
-                    self.logger.info("wait_job %d iterations=%d", job_id, i)
+                    self.logger.debug("wait_job %d iterations=%d", job_id, i)
                 time.sleep(0.1)
             else:
                 self.logger.error("wait_job: error state=%s job=%d", state, job_id)
