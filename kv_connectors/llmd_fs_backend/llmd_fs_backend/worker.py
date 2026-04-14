@@ -269,13 +269,9 @@ class StorageOffloadingHandlers:
         max_staging_memory_gb: int = DEFAULT_MAX_STAGING_MEMORY_GB,
         read_preferring_ratio: float = DEFAULT_READ_PREFERRING_WORKERS_RATIO,
         backend: str = "POSIX",
-        bucket: str = "",
-        endpoint_override: str = "",
-        scheme: str = "http",
-        access_key: str = "",
-        secret_key: str = "",
-        ca_bundle: str = "",
+        extra_config: dict | None = None,
     ):
+        extra_config = extra_config or {}
         threads_per_gpu = min(threads_per_gpu, int(os.cpu_count()))
         tensors, kernel_block_size = StorageOffloadingHandlers._get_tensors(
             kv_caches, attn_backends
@@ -317,12 +313,7 @@ class StorageOffloadingHandlers:
             gpu_blocks_per_file=gpu_blocks_per_file,
             tensors=tensors,
             read_preferring_workers=read_preferring_workers,
-            bucket=bucket,
-            endpoint_override=endpoint_override,
-            scheme=scheme,
-            access_key=access_key,
-            secret_key=secret_key,
-            ca_bundle=ca_bundle,
+            extra_config=extra_config,
         )
 
         # Compute per-GPU-block size in bytes for metrics across all layers.
