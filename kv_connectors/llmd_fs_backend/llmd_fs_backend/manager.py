@@ -38,6 +38,7 @@ class SharedStorageOffloadingManager(OffloadingManager):
     LOOKUP_MODE_FILE = "file"
     LOOKUP_MODE_OBJECT_STORE = "object_store"
     LOOKUP_MODE_DICT = "dict"
+    LOOKUP_MODE_REDIS = "redis"
 
     def __init__(
         self,
@@ -51,9 +52,11 @@ class SharedStorageOffloadingManager(OffloadingManager):
         self._stored_keys: set[str] = set()
 
         if lookup_mode == self.LOOKUP_MODE_OBJECT_STORE:
-            # Import only when OBJ is used to avoid nixl dependencies
-            from llmd_nixl.obj_lookup import ObjLookup  
+            from llmd_nixl.obj_lookup import ObjLookup  # lazy: avoids nixl import
             self._obj_lookup = ObjLookup(cfg)
+        elif lookup_mode == self.LOOKUP_MODE_REDIS:
+            from llmd_fs_backend.redis_lookup import RedisLookup  # lazy: avoids redis import
+            self._redis_lookup = RedisLookup(cfg)
 
     # ----------------------------------------------------------------------
     # Lookup
@@ -72,6 +75,9 @@ class SharedStorageOffloadingManager(OffloadingManager):
                     break
             elif self.lookup_mode == self.LOOKUP_MODE_OBJECT_STORE:
                 if not self._obj_lookup.exists(key):
+                    break
+            elif self.lookup_mode == self.LOOKUP_MODE_REDIS:
+                if not self._redis_lookup.exists(key):
                     break
             elif self.lookup_mode == self.LOOKUP_MODE_FILE:
                 if not os.path.exists(key):
@@ -130,6 +136,10 @@ class SharedStorageOffloadingManager(OffloadingManager):
         For shared storage, storing is stateless - no action needed.
         In dict lookup mode, record successfully stored keys.
         """
-        if success and self.lookup_mode == self.LOOKUP_MODE_DICT:
-            for block_hash in block_hashes:
-                self._stored_keys.add(self.file_mapper.get_file_name(block_hash))
+        if success:
+            if self.lookup_mode == self.LOOKUP_MODE_DICT:
+                for block_hash in block_hashes:
+                    self._stored_keys.add(self.file_mapper.get_file_name(block_hash))
+            elif self.lookup_mode == self.LOOKUP_MODE_REDIS:
+                for block_hash in block_hashes:
+                    self._redis_lookup.record(self.file_mapper.get_file_name(block_hash))
