@@ -273,6 +273,7 @@ class StorageOffloadingHandlers:
         extra_config: dict | None = None,
     ):
         extra_config = extra_config or {}
+        backend = extra_config.get("backend", "POSIX")
         threads_per_gpu = min(threads_per_gpu, int(os.cpu_count()))
         tensors = [t.tensor for t in kv_caches.tensors]
         assert tensors
@@ -280,9 +281,11 @@ class StorageOffloadingHandlers:
         # Compute staging memory buffer size
         buffer_size_mb = self._compute_buffer_size_mb(tensors, gpu_blocks_per_file)
 
+        gds_mode = extra_config.get("gds_mode", "disabled")
+
         # Adjust threads_per_gpu if exceeding max_staging_memory_gb.
         # Skip for full-GDS backends — CPU staging buffer is not used.
-        _gds_uses_no_staging = posix_uses_no_staging(backend)
+        _gds_uses_no_staging = posix_uses_no_staging(gds_mode)
         if (
             not _gds_uses_no_staging
             and buffer_size_mb * threads_per_gpu > max_staging_memory_gb * 1024
@@ -310,6 +313,7 @@ class StorageOffloadingHandlers:
             gds_mode=gds_mode,
             max_write_queued_seconds=max_write_queued_seconds,
             extra_config=extra_config,
+            gds_mode=gds_mode,
         )
 
         # Compute per-GPU-block size in bytes for metrics across all tensors.
