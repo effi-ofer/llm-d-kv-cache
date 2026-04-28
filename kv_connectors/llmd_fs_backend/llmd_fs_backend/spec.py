@@ -109,6 +109,7 @@ class SharedStorageOffloadingSpec(OffloadingSpec):
             backend = self.extra_config.get("backend", "POSIX")
             if backend == "OBJ":
                 from llmd_nixl.manager import NixlStorageOffloadingManager
+
                 self._manager = NixlStorageOffloadingManager(
                     file_mapper=self.file_mapper,
                     extra_config=self.extra_config,
@@ -127,6 +128,7 @@ class SharedStorageOffloadingSpec(OffloadingSpec):
             backend = self.extra_config.get("backend", "POSIX")
             if backend == "OBJ":
                 from llmd_nixl.worker import NixlStorageOffloadingHandlers
+
                 handlers_cls = NixlStorageOffloadingHandlers
             else:
                 handlers_cls = StorageOffloadingHandlers

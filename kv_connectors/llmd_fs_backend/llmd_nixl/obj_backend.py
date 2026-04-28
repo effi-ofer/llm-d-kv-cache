@@ -15,7 +15,6 @@
 """OBJ (S3) storage backend."""
 
 import hashlib
-from typing import List
 
 import torch
 
@@ -34,10 +33,12 @@ class ObjBackend(_StagedBackend):
         self,
         io_threads: int,
         gpu_blocks_per_file: int,
-        tensors: List[torch.Tensor],
+        tensors: list[torch.Tensor],
         extra_config: dict | None = None,
     ):
-        assert gpu_blocks_per_file == 1, "OBJ backend: multiple blocks per object not yet supported"
+        assert gpu_blocks_per_file == 1, (
+            "OBJ backend: multiple blocks per object not yet supported"
+        )
 
         cfg = extra_config or {}
         required = ["bucket", "endpoint_override", "access_key", "secret_key"]
@@ -68,7 +69,7 @@ class ObjBackend(_StagedBackend):
             params["ca_bundle"] = self._ca_bundle
         return params
 
-    def _open_files(self, files: List[str]) -> list:
+    def _open_files(self, files: list[str]) -> list:
         return list(files)  # S3 keys - no real FDs
 
     def _build_nixl_file_entry(self, fd_list, file_idx, _intra_offset) -> tuple:

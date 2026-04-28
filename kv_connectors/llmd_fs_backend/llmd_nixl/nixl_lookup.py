@@ -15,6 +15,7 @@
 """Block existence lookup via NIXL query_memory."""
 
 from nixl._api import nixl_agent, nixl_agent_config
+
 from llmd_nixl.obj_backend import obj_key_to_dev_id
 
 
@@ -29,11 +30,11 @@ class NixlLookup:
         agent_config = nixl_agent_config(backends=[])
         self._agent = nixl_agent("NixlLookup", agent_config)
         backend_params = {
-            "bucket":            cfg.get("bucket", ""),
+            "bucket": cfg.get("bucket", ""),
             "endpoint_override": cfg.get("endpoint_override", ""),
-            "scheme":            cfg.get("scheme", "http"),
-            "access_key":        cfg.get("access_key", ""),
-            "secret_key":        cfg.get("secret_key", ""),
+            "scheme": cfg.get("scheme", "http"),
+            "access_key": cfg.get("access_key", ""),
+            "secret_key": cfg.get("secret_key", ""),
         }
         if cfg.get("ca_bundle"):
             backend_params["ca_bundle"] = cfg["ca_bundle"]

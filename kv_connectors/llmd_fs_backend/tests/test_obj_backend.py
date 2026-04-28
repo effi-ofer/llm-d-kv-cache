@@ -39,10 +39,11 @@ import time
 
 import pytest
 import torch
+
 from llmd_fs_backend.file_mapper import FileMapper
 from llmd_fs_backend.mediums import SharedStorageLoadStoreSpec
-from llmd_nixl.worker import NixlStorageOffloadingHandlers
 from llmd_nixl.nixl_lookup import NixlLookup
+from llmd_nixl.worker import NixlStorageOffloadingHandlers
 from tests.test_fs_backend import (
     assert_blocks_equal,
     create_dummy_kv_tensors,
@@ -74,22 +75,22 @@ def _get_param(request, cli_opt: str, env_var: str, default: str = "") -> str:
 def obj_config(request):
     """Session-scoped fixture that collects OBJ connection parameters.
     Skips the entire session if required credentials are not provided."""
-    endpoint   = _get_param(request, "--obj-endpoint",   "OBJ_ENDPOINT")
-    bucket     = _get_param(request, "--obj-bucket",     "OBJ_BUCKET")
+    endpoint = _get_param(request, "--obj-endpoint", "OBJ_ENDPOINT")
+    bucket = _get_param(request, "--obj-bucket", "OBJ_BUCKET")
     access_key = _get_param(request, "--obj-access-key", "OBJ_ACCESS_KEY")
     secret_key = _get_param(request, "--obj-secret-key", "OBJ_SECRET_KEY")
-    scheme     = _get_param(request, "--obj-scheme",     "OBJ_SCHEME", "http")
-    ca_bundle  = _get_param(request, "--obj-ca-bundle",  "OBJ_CA_BUNDLE", "")
+    scheme = _get_param(request, "--obj-scheme", "OBJ_SCHEME", "http")
+    ca_bundle = _get_param(request, "--obj-ca-bundle", "OBJ_CA_BUNDLE", "")
     if not endpoint or not bucket or not access_key or not secret_key:
         pytest.skip("OBJ endpoint, bucket, access_key and secret_key must be set")
 
     cfg = {
         "endpoint_override": endpoint,
-        "bucket":            bucket,
-        "access_key":        access_key,
-        "secret_key":        secret_key,
-        "scheme":            scheme,
-        "ca_bundle":         ca_bundle,
+        "bucket": bucket,
+        "access_key": access_key,
+        "secret_key": secret_key,
+        "scheme": scheme,
+        "ca_bundle": ca_bundle,
     }
 
     try:
@@ -206,7 +207,8 @@ def roundtrip_once_obj(
         num_layers, num_heads, block_size, head_size, dtype, len(read_block_ids)
     )
     print(
-        f"\n[INFO] write blocks={len(write_block_ids)} read blocks={len(read_block_ids)} "
+        f"\n[INFO] write blocks={len(write_block_ids)}"
+        f" read blocks={len(read_block_ids)} "
         f"PUT {dur_put:.4f}s ({throughput_gbps(write_total_mb, dur_put):.2f} GB/s), "
         f"GET {dur_get:.4f}s ({throughput_gbps(read_total_mb, dur_get):.2f} GB/s)"
     )

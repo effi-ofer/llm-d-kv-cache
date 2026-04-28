@@ -35,7 +35,9 @@ class NixlStorageOffloadingManager(SharedStorageOffloadingManager):
     is preferred over filesystem stat calls.
     """
 
-    def __init__(self, file_mapper: FileMapper, extra_config: dict | None = None) -> None:
+    def __init__(
+        self, file_mapper: FileMapper, extra_config: dict | None = None
+    ) -> None:
         super().__init__(file_mapper)
         cfg = extra_config or {}
         self.lookup_mode = cfg.get("lookup_mode", LOOKUP_MODE_NIXL_QUERY)
@@ -60,7 +62,9 @@ class NixlStorageOffloadingManager(SharedStorageOffloadingManager):
         logger.debug("lookup(%s): %d", self.lookup_mode, hit_count)
         return hit_count
 
-    def complete_store(self, block_hashes: Iterable[BlockHash], success: bool = True) -> None:
+    def complete_store(
+        self, block_hashes: Iterable[BlockHash], success: bool = True
+    ) -> None:
         if not success or self.lookup_mode != LOOKUP_MODE_DICT:
             return
         for block_hash in block_hashes:

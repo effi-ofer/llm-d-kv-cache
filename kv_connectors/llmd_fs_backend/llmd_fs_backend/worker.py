@@ -32,6 +32,7 @@ from llmd_fs_backend import _logger as logger
 from llmd_fs_backend.file_mapper import FileMapper
 from llmd_fs_backend.mediums import SharedStorageLoadStoreSpec
 
+
 @runtime_checkable
 class StorageEngine(Protocol):
     """Common interface shared by all storage engine backends.
@@ -40,11 +41,16 @@ class StorageEngine(Protocol):
     and the C++ storage_offload.StorageOffloadEngine.
     """
 
-    def async_store_gpu_blocks(self, job_id: int, files: list, block_ids: list) -> bool: ...
-    def async_load_gpu_blocks(self, job_id: int, files: list, block_ids: list) -> bool: ...
+    def async_store_gpu_blocks(
+        self, job_id: int, files: list, block_ids: list
+    ) -> bool: ...
+    def async_load_gpu_blocks(
+        self, job_id: int, files: list, block_ids: list
+    ) -> bool: ...
     def get_finished(self) -> list: ...
     def wait_job(self, job_id: int) -> None: ...
     def shutdown(self) -> None: ...
+
 
 # ----------------------------------------------------------------------
 # Base Storage Offloading Handler
@@ -391,7 +397,7 @@ class StorageOffloadingHandlers:
         extra_config: dict,
         gds_mode: str,
     ) -> StorageEngine:
-        return storage_offload.StorageOffloadEngine(  
+        return storage_offload.StorageOffloadEngine(
             io_threads,
             gpu_blocks_per_file,
             tensors,
@@ -399,4 +405,3 @@ class StorageOffloadingHandlers:
             gds_mode,
             max_write_queued_seconds,
         )
-

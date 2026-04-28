@@ -16,7 +16,6 @@
 
 import queue
 from abc import ABC
-from typing import List
 
 import torch
 
@@ -34,7 +33,7 @@ class _StagedBackend(StorageOffloadEngine, ABC):
         self,
         io_threads: int,
         gpu_blocks_per_file: int,
-        tensors: List[torch.Tensor],
+        tensors: list[torch.Tensor],
         backend: str,
     ):
         super().__init__(io_threads, gpu_blocks_per_file, tensors, backend)
@@ -43,20 +42,24 @@ class _StagedBackend(StorageOffloadEngine, ABC):
         self._staging_pool: queue.Queue = queue.Queue()
         total_block_bytes = len(tensors) * self._block_size
         for _ in range(io_threads * 8):  # over-provision to avoid pool exhaustion
-            buf = torch.empty(total_block_bytes, dtype=torch.uint8, device='cpu').pin_memory()
+            buf = torch.empty(
+                total_block_bytes, dtype=torch.uint8, device="cpu"
+            ).pin_memory()
             reg = self.agent.register_memory([buf])
             self._staging_pool.put((buf, reg))
 
-    def _get_blocks_data(self, tensors: List[torch.Tensor], _block_ids: List) -> list:
+    def _get_blocks_data(self, tensors: list[torch.Tensor], _block_ids: list) -> list:
         # tensors is one staging buffer per block (flattened); build one NIXL
         # descriptor per buffer
         blocks_data = []
         for tensor in tensors:
             assert tensor.is_cpu
-            blocks_data.append((tensor.data_ptr(), len(self.tensors) * self._block_size, 0))
+            blocks_data.append(
+                (tensor.data_ptr(), len(self.tensors) * self._block_size, 0)
+            )
         return blocks_data
 
-    def _get_staging_and_copy(self, block_ids: List) -> tuple:
+    def _get_staging_and_copy(self, block_ids: list) -> tuple:
         # block_ids is a list of lists; acquire one staging slot per block
         num_blocks = sum(len(bl) for bl in block_ids)
         assert self._staging_pool.qsize() >= num_blocks, (
@@ -71,14 +74,16 @@ class _StagedBackend(StorageOffloadEngine, ABC):
                     buf, _ = staging
                     offset = 0
                     for tensor in self.tensors:
-                        buf[offset:offset + self._block_size].copy_(
-                            tensor[block_id].view(torch.uint8).flatten(), non_blocking=True)
+                        buf[offset : offset + self._block_size].copy_(
+                            tensor[block_id].view(torch.uint8).flatten(),
+                            non_blocking=True,
+                        )
                         offset += self._block_size
                     stagings.append(staging)
                     tensors.append(buf)
         return tensors, stagings
 
-    def _get_staging(self, block_ids: List) -> tuple:
+    def _get_staging(self, block_ids: list) -> tuple:
         # block_ids is a list of lists; acquire one staging slot per block
         num_blocks = sum(len(bl) for bl in block_ids)
         assert self._staging_pool.qsize() >= num_blocks, (
@@ -96,7 +101,7 @@ class _StagedBackend(StorageOffloadEngine, ABC):
     def _sync_before_transfer(self) -> None:
         self._d2h_stream.synchronize()
 
-    def _complete_read(self, stagings: list, block_ids: List) -> None:
+    def _complete_read(self, stagings: list, block_ids: list) -> None:
         with torch.cuda.stream(self._h2d_stream):
             # block_ids is nested (one list per file), but stagings is flat (one
             # entry per block), matching the order produced by _get_staging.
@@ -108,7 +113,8 @@ class _StagedBackend(StorageOffloadEngine, ABC):
                 offset = 0
                 for tensor in self.tensors:
                     tensor[block_id].view(torch.uint8).flatten().copy_(
-                        buf[offset:offset + self._block_size], non_blocking=True)
+                        buf[offset : offset + self._block_size], non_blocking=True
+                    )
                     offset += self._block_size
         self._h2d_stream.synchronize()
 

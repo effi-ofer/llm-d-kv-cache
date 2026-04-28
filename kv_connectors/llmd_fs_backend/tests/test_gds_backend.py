@@ -100,9 +100,8 @@ class TestGDSAvailability:
 
         import math
 
-        from tests.test_fs_backend import roundtrip_once
-
         from llmd_fs_backend.file_mapper import FileMapper
+        from tests.test_fs_backend import roundtrip_once
 
         num_layers = 80
         num_blocks = 8
