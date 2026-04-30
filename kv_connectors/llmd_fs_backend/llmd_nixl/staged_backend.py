@@ -40,8 +40,10 @@ class _StagedBackend(StorageOffloadEngine, ABC):
         self._d2h_stream = torch.cuda.Stream()  # GPU --> CPU for WRITE staging
         self._h2d_stream = torch.cuda.Stream()  # CPU --> GPU for READ completion
         self._staging_pool: queue.Queue = queue.Queue()
+        num_gpu_blocks = tensors[0].shape[0]
+        self._staging_pool_size = max(io_threads * 8, num_gpu_blocks)
         total_block_bytes = len(tensors) * self._block_size
-        for _ in range(io_threads * 8):  # over-provision to avoid pool exhaustion
+        for _ in range(self._staging_pool_size):
             buf = torch.empty(
                 total_block_bytes, dtype=torch.uint8, device="cpu"
             ).pin_memory()
@@ -62,10 +64,14 @@ class _StagedBackend(StorageOffloadEngine, ABC):
     def _get_staging_and_copy(self, block_ids: list) -> tuple:
         # block_ids is a list of lists; acquire one staging slot per block
         num_blocks = sum(len(bl) for bl in block_ids)
-        assert self._staging_pool.qsize() >= num_blocks, (
-            f"Staging pool exhausted: need {num_blocks} slots, "
-            f"have {self._staging_pool.qsize()} (pool size={self.io_threads * 8})"
-        )
+        if self._staging_pool.qsize() < num_blocks:
+            self.logger.warning(
+                "Staging pool exhausted (WRITE): need %d slots, have %d (pool size=%d)",
+                num_blocks,
+                self._staging_pool.qsize(),
+                self._staging_pool_size,
+            )
+            return None, None
         stagings, tensors = [], []
         with torch.cuda.stream(self._d2h_stream):
             for block_list in block_ids:
@@ -86,10 +92,14 @@ class _StagedBackend(StorageOffloadEngine, ABC):
     def _get_staging(self, block_ids: list) -> tuple:
         # block_ids is a list of lists; acquire one staging slot per block
         num_blocks = sum(len(bl) for bl in block_ids)
-        assert self._staging_pool.qsize() >= num_blocks, (
-            f"Staging pool exhausted: need {num_blocks} slots, "
-            f"have {self._staging_pool.qsize()} (pool size={self.io_threads * 8})"
-        )
+        if self._staging_pool.qsize() < num_blocks:
+            self.logger.warning(
+                "Staging pool exhausted (READ): need %d slots, have %d (pool size=%d)",
+                num_blocks,
+                self._staging_pool.qsize(),
+                self._staging_pool_size,
+            )
+            return None, None
         stagings, tensors = [], []
         for block_list in block_ids:
             for _ in block_list:
